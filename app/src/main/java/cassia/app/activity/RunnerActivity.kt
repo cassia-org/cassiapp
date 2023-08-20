@@ -3,6 +3,7 @@ package cassia.app.activity
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
@@ -43,8 +44,8 @@ class RunnerActivity : ComponentActivity() {
                     var status by remember { mutableStateOf("Waiting") }
                     SurfaceViewComposable(
                         surfaceCreatedHandler = { holder -> Log.e("cassia", "surfaceCreated"); status = "Surface created"; },
-                        surfaceChangedHandler = { holder, format, width, height -> Log.e("cassia", "surfaceChanged"); status = "Surface active (${width}x${height})"; },
-                        surfaceDestroyedHandler = { holder -> Log.e("cassia", "surfaceDestroyed"); status = "Surface destroyed"; }
+                        surfaceChangedHandler = { holder, format, width, height -> setSurface(holder.surface); status = "Surface active (${width}x${height})"; },
+                        surfaceDestroyedHandler = { holder -> setSurface(null); status = "Surface destroyed"; }
                     )
                     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Text("Cassia Runner", style = MaterialTheme.typography.bodyMedium, color = Color.White)
@@ -87,6 +88,16 @@ class RunnerActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.e("cassia", "onDestroy")
+    }
+
+    external fun runServer()
+
+    external fun setSurface(surface: Surface?)
+
+    companion object {
+        init {
+            System.loadLibrary("cassia")
+        }
     }
 }
 

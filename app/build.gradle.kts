@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "cassia.app"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "cassia.app"
@@ -22,6 +22,10 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+        debug {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -42,6 +46,12 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
         }
     }
 }

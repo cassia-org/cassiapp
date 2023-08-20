@@ -1,0 +1,3 @@
+[submodule "app/src/main/cpp/libs/Vulkan-Headers"]
+	path = app/src/main/cpp/libs/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers
