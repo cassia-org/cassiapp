@@ -18,17 +18,18 @@
             android:name=".activity.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Cassia">
+        </activity>
+        <activity
+            android:name=".activity.RunnerActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Cassia.Runner"
+            android:screenOrientation="sensorLandscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".activity.RunnerActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Cassia.Runner"
-            android:screenOrientation="sensorLandscape" />
     </application>
 
 </manifest>
