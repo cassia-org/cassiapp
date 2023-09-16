@@ -345,6 +345,12 @@ void Compositor::Dequeue(cassia_compositor_command_dequeue command,
 
     decltype(virtualSwapchain.buffers)::iterator bufferIt{};
     auto pred{[&]() {
+        static size_t bufferIdx{0};
+        bufferIdx = (bufferIdx + 1) % virtualSwapchain.buffers.size();
+        bufferIt = std::next(virtualSwapchain.buffers.begin(), bufferIdx);
+        if (bufferIt->state == VirtualSwapchain::Buffer::State::Free)
+            return true;
+
         bufferIt = std::find_if(virtualSwapchain.buffers.begin(), virtualSwapchain.buffers.end(), [](const auto &buffer) {
             return buffer.state == VirtualSwapchain::Buffer::State::Free;
         });
