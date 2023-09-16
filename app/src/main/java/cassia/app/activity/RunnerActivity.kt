@@ -1,5 +1,6 @@
 package cassia.app.activity
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -33,8 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cassia.app.R
 import cassia.app.ui.theme.CassiaTheme
+import kotlin.math.abs
 
 class RunnerActivity : ComponentActivity() {
+    var serverThread = Thread { runServer() }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -43,9 +46,15 @@ class RunnerActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     var status by remember { mutableStateOf("Waiting") }
                     SurfaceViewComposable(
-                        surfaceCreatedHandler = { holder -> Log.e("cassia", "surfaceCreated"); status = "Surface created"; },
-                        surfaceChangedHandler = { holder, format, width, height -> setSurface(holder.surface); status = "Surface active (${width}x${height})"; },
-                        surfaceDestroyedHandler = { holder -> setSurface(null); status = "Surface destroyed"; }
+                        surfaceCreatedHandler = { holder -> status = "Surface created"; },
+                        surfaceChangedHandler = { holder, format, width, height ->
+                            setSurface(holder.surface)
+                            status = "Surface active (${width}x${height})"
+                        },
+                        surfaceDestroyedHandler = { holder ->
+                            setSurface(null)
+                            status = "Surface destroyed"
+                        }
                     )
                     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Text("Cassia Runner", style = MaterialTheme.typography.bodyMedium, color = Color.White)
@@ -69,6 +78,7 @@ class RunnerActivity : ComponentActivity() {
                 it.hide(android.view.WindowInsets.Type.systemBars())
             }
         }
+        serverThread.start()
     }
 
     override fun onResume() {
