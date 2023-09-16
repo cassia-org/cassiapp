@@ -38,6 +38,27 @@ import kotlin.math.abs
 
 class RunnerActivity : ComponentActivity() {
     var serverThread = Thread { runServer() }
+
+    /**
+     * Forces a 60Hz refresh rate for the primary display when [enable] is true, otherwise selects the highest available refresh rate
+     */
+    private fun force60HzRefreshRate(enable : Boolean) {
+        // Hack for MIUI devices since they don't support the standard Android APIs
+        try {
+            val setFpsIntent = Intent("com.miui.powerkeeper.SET_ACTIVITY_FPS")
+            setFpsIntent.putExtra("package_name", "skyline.emu")
+            setFpsIntent.putExtra("isEnter", enable)
+            sendBroadcast(setFpsIntent)
+        } catch (_ : Exception) {
+        }
+
+        @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
+        if (enable)
+            display?.supportedModes?.minByOrNull { abs(it.refreshRate - 60f) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+        else
+            display?.supportedModes?.maxByOrNull { it.refreshRate }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -78,6 +99,9 @@ class RunnerActivity : ComponentActivity() {
                 it.hide(android.view.WindowInsets.Type.systemBars())
             }
         }
+
+        force60HzRefreshRate(false)
+
         serverThread.start()
     }
 
@@ -93,6 +117,8 @@ class RunnerActivity : ComponentActivity() {
                     or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
+
+        force60HzRefreshRate(false)
     }
 
     override fun onDestroy() {

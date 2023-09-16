@@ -101,8 +101,6 @@ void Compositor::ThreadFunc() {
         cv.notify_all();
         waitSemaphores.clear();
         frameUsedBuffers.clear();
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
-
 
         auto &compositeDoneFence{compositeDoneFences[frameIndex]};
         auto &commandBuffer{commandBuffers[frameIndex]};
