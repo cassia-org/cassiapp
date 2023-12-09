@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
@@ -12,7 +11,6 @@ import android.view.WindowInsetsController
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,8 +35,6 @@ import cassia.app.ui.theme.CassiaTheme
 import kotlin.math.abs
 
 class RunnerActivity : ComponentActivity() {
-    var serverThread = Thread { runServer() }
-
     /**
      * Forces a 60Hz refresh rate for the primary display when [enable] is true, otherwise selects the highest available refresh rate
      */
@@ -69,11 +65,9 @@ class RunnerActivity : ComponentActivity() {
                     SurfaceViewComposable(
                         surfaceCreatedHandler = { holder -> status = "Surface created"; },
                         surfaceChangedHandler = { holder, format, width, height ->
-                            setSurface(holder.surface)
                             status = "Surface active (${width}x${height})"
                         },
                         surfaceDestroyedHandler = { holder ->
-                            setSurface(null)
                             status = "Surface destroyed"
                         }
                     )
@@ -101,8 +95,6 @@ class RunnerActivity : ComponentActivity() {
         }
 
         force60HzRefreshRate(false)
-
-        serverThread.start()
     }
 
     override fun onResume() {
@@ -124,16 +116,6 @@ class RunnerActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.e("cassia", "onDestroy")
-    }
-
-    external fun runServer()
-
-    external fun setSurface(surface: Surface?)
-
-    companion object {
-        init {
-            System.loadLibrary("cassia")
-        }
     }
 }
 
