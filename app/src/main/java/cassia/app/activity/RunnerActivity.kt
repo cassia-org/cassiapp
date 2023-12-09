@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import cassia.app.CassiaApplication
 import cassia.app.R
 import cassia.app.ui.theme.CassiaTheme
 import kotlin.math.abs
@@ -65,9 +66,11 @@ class RunnerActivity : ComponentActivity() {
                     SurfaceViewComposable(
                         surfaceCreatedHandler = { holder -> status = "Surface created"; },
                         surfaceChangedHandler = { holder, format, width, height ->
+                            (application as CassiaApplication).manager.setSurface(holder.surface)
                             status = "Surface active (${width}x${height})"
                         },
                         surfaceDestroyedHandler = { holder ->
+                            (application as CassiaApplication).manager.setSurface(null)
                             status = "Surface destroyed"
                         }
                     )

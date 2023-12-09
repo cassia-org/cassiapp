@@ -21,6 +21,8 @@ class CassiaApplication : Application() {
         private set
     lateinit var prefixes: PrefixStore
         private set
+    lateinit var manager: CassiaManager
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -32,5 +34,6 @@ class CassiaApplication : Application() {
             runtimes.scan()
             prefixes.scan()
         }
+        manager = CassiaManager()
     }
 }
