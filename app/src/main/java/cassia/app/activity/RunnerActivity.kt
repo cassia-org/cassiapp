@@ -43,7 +43,7 @@ class RunnerActivity : ComponentActivity() {
         // Hack for MIUI devices since they don't support the standard Android APIs
         try {
             val setFpsIntent = Intent("com.miui.powerkeeper.SET_ACTIVITY_FPS")
-            setFpsIntent.putExtra("package_name", "skyline.emu")
+            setFpsIntent.putExtra("package_name", applicationContext.packageName!!)
             setFpsIntent.putExtra("isEnter", enable)
             sendBroadcast(setFpsIntent)
         } catch (_ : Exception) {
@@ -98,6 +98,8 @@ class RunnerActivity : ComponentActivity() {
         }
 
         force60HzRefreshRate(false)
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onResume() {
