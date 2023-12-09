@@ -6,10 +6,7 @@ project(cassia)
 # Libraries
 add_subdirectory(libs)
 
-# Cassia Server
-add_subdirectory(cassiasrv)
-
 # Cassia JNI
 add_library(cassia SHARED native-lib.cpp)
 
-target_link_libraries(cassia cassiasrv android log)
+target_link_libraries(cassia android log)
