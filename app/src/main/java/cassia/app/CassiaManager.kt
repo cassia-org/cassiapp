@@ -14,7 +14,7 @@ class CassiaManager {
         }
     }
 
-    private external fun runServer(runtimePath: String, prefixPath: String)
+    private external fun startServer(runtimePath: String, prefixPath: String)
 
     private external fun stopServer()
 
@@ -25,21 +25,16 @@ class CassiaManager {
     var runningPrefix: Prefix? = null
         private set
 
-    var thread: Thread? = null
-        private set
-
-    suspend fun start(prefixUuid: String) {
+    suspend fun start(prefixUUID: String) {
         mutex.withLock {
             if (runningPrefix != null)
                 throw IllegalStateException("A prefix is already running")
-            val prefix = CassiaApplication.instance.prefixes.updateLinks(prefixUuid)
+            val prefix = CassiaApplication.instance.prefixes.updateLinks(prefixUUID)
             runningPrefix = prefix
 
-            thread = Thread {
-                runServer(prefix.runtimePath.toString(), prefix.path.toString())
+            withContext(Dispatchers.IO) {
+                startServer(prefix.runtimePath.toString(), prefix.path.toString())
             }
-
-            thread?.start()
         }
     }
 
@@ -51,7 +46,6 @@ class CassiaManager {
 
             withContext(Dispatchers.IO) {
                 stopServer()
-                thread?.join()
             }
         }
     }

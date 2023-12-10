@@ -10,7 +10,7 @@ std::optional<cassia::WineContext> wineCtx;
 ANativeWindow *nativeWindow{nullptr};
 
 extern "C" JNIEXPORT void JNICALL
-Java_cassia_app_CassiaManager_runServer(
+Java_cassia_app_CassiaManager_startServer(
         JNIEnv* env,
         jobject /* this */,
         jstring jRuntimePath, jstring jPrefixPath) {
