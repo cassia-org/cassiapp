@@ -12,7 +12,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.createDirectory
 import kotlin.io.path.deleteExisting
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.deleteRecursively
@@ -35,10 +34,14 @@ data class Prefix(val uuid: String, val name: String, val runtimeId: String, val
 class PrefixStore(val path: Path) {
     companion object {
         const val TAG = "cassia.kt.PrefixStore"
+        const val PREFIX_SUBDIR = "pfx"
+        const val HOME_SUBDIR = "home"
+        const val METADATA_FILE = "metadata.json"
     }
 
-    private var prefixes = mutableListOf<Prefix>()
     private var scanned = false
+    private var prefixes = mutableListOf<Prefix>()
+        get() = if (scanned) field else throw IllegalStateException("Prefix store has not been scanned yet")
     private val mutex = Mutex()
 
     init {
@@ -56,7 +59,7 @@ class PrefixStore(val path: Path) {
                         if (!Files.isDirectory(it)) {
                             Log.w(TAG, "Unexpected file in prefix directory: ${it.name}")
                             false
-                        } else if (!Files.exists(it.resolve("metadata.json"))) {
+                        } else if (!Files.exists(it.resolve(METADATA_FILE))) {
                             Log.w(TAG, "Prefix directory ${it.name} does not contain metadata.json")
                             false
                         } else {
@@ -65,7 +68,7 @@ class PrefixStore(val path: Path) {
                     }
                     .map {
                         val prefix = runCatching {
-                            val json = Files.newInputStream(it.resolve("metadata.json")!!).use { stream -> stream.reader().readText() }
+                            val json = Files.newInputStream(it.resolve(METADATA_FILE)!!).use { stream -> stream.reader().readText() }
                             Json.decodeFromString(Prefix.serializer(), json)
                         }.getOrElse { e ->
                             Log.w(TAG, "Failed to parse metadata.json for ${it.name}: $e")
@@ -88,24 +91,26 @@ class PrefixStore(val path: Path) {
         }
     }
 
-    private fun unlinkPrefix(prefix: Prefix): Prefix {
-        for (link in prefix.runtimeLinks) {
-            val path = prefix.path.resolve("pfx").resolve(link)
-            if (path.exists() && !path.isSymbolicLink())
-                Log.w(TAG, "Link $link for prefix ${prefix.name} (${prefix.uuid}) is not a symbolic link")
-            path.deleteIfExists()
+    private suspend fun unlinkPrefixRuntimeLocked(prefix: Prefix): Prefix {
+        return withContext(Dispatchers.IO) {
+            for (link in prefix.runtimeLinks) {
+                val path = prefix.path.resolve(PREFIX_SUBDIR).resolve(link)
+                if (path.exists() && !path.isSymbolicLink())
+                    Log.w(TAG, "Link $link for prefix ${prefix.name} (${prefix.uuid}) is not a symbolic link")
+                path.deleteIfExists()
+            }
+            prefix.copy(runtimeLinks = emptyList())
         }
-        return prefix.copy(runtimeLinks = emptyList())
     }
 
-    private suspend fun linkPrefix(prefix: Prefix): Prefix {
+    private suspend fun linkPrefixRuntimeLocked(prefix: Prefix): Prefix {
         return withContext(Dispatchers.IO) {
             val runtime = prefix.runtime()
             val links = mutableListOf<String>()
             for ((target, link) in runtime.prefixLinks) {
-                val linkPath = prefix.path.resolve("pfx").resolve(link)
+                val linkPath = prefix.path.resolve(PREFIX_SUBDIR).resolve(link)
                 if (linkPath.exists()) {
-                    Log.w(TAG, "Link $linkPath for prefix ${prefix.name} (${prefix.uuid}) already exists")
+                    Log.d(TAG, "Link $linkPath for prefix ${prefix.name} (${prefix.uuid}) already exists")
                     linkPath.deleteExisting()
                 }
                 Files.createDirectories(linkPath.parent)
@@ -117,10 +122,10 @@ class PrefixStore(val path: Path) {
         }
     }
 
-    private suspend fun writePrefix(prefix: Prefix) {
+    private suspend fun writePrefixLocked(prefix: Prefix) {
         withContext(Dispatchers.IO) {
-            Files.newOutputStream(prefix.path.resolve("metadata.json")).use { stream ->
-                Log.w(TAG, "Writing metadata.json for ${prefix.name} (${prefix.uuid}): ${Json.encodeToString(Prefix.serializer(), prefix)}")
+            Files.newOutputStream(prefix.path.resolve(METADATA_FILE)).use { stream ->
+                Log.w(TAG, "Writing $METADATA_FILE for ${prefix.name} (${prefix.uuid}): ${Json.encodeToString(Prefix.serializer(), prefix)}")
                 stream.writer().use {
                     it.write(Json.encodeToString(Prefix.serializer(), prefix))
                 }
@@ -128,95 +133,80 @@ class PrefixStore(val path: Path) {
         }
     }
 
-    suspend fun create(name: String, runtimeId: String): Prefix {
+    private suspend fun createLocked(name: String, runtimeId: String): Prefix {
         return withContext(Dispatchers.IO) {
-            mutex.withLock {
-                var uuid: String
-                var prefixPath: Path
-                do {
-                    uuid = java.util.UUID.randomUUID().toString()
-                    prefixPath = Paths.get(path.toString(), uuid)
-                } while (Files.exists(prefixPath))
+            var uuid: String
+            var prefixPath: Path
+            do {
+                uuid = java.util.UUID.randomUUID().toString()
+                prefixPath = Paths.get(path.toString(), uuid)
+            } while (Files.exists(prefixPath))
 
-                Files.createDirectory(prefixPath)
-                Files.createDirectory(prefixPath.resolve("pfx"))
-                Files.createDirectory(prefixPath.resolve("home"))
+            Files.createDirectory(prefixPath)
+            Files.createDirectory(prefixPath.resolve(PREFIX_SUBDIR))
+            Files.createDirectory(prefixPath.resolve(HOME_SUBDIR))
 
-                val prefix = linkPrefix(Prefix(uuid, name, runtimeId))
-                writePrefix(prefix)
-                prefixes.add(prefix)
-                prefix
-            }
+            val prefix = linkPrefixRuntimeLocked(Prefix(uuid, name, runtimeId))
+            writePrefixLocked(prefix)
+            prefixes.add(prefix)
+            prefix
         }
     }
 
-    suspend fun list(): List<Prefix> {
-        if (!scanned)
-            return scan()
-        mutex.withLock {
-            return prefixes
+    suspend fun create(name: String, runtimeId: String): Prefix = mutex.withLock { createLocked(name, runtimeId) }
+
+    @OptIn(ExperimentalPathApi::class)
+    private suspend fun deleteLocked(uuid: String) {
+        withContext(Dispatchers.IO) {
+            val prefix = prefixes.find { it.uuid == uuid } ?: return@withContext
+            prefix.path.deleteRecursively()
+            prefixes.remove(prefix)
         }
     }
 
-    suspend fun get(uuid: String): Prefix? = list().find { it.uuid == uuid }
+    suspend fun delete(uuid: String) = mutex.withLock { deleteLocked(uuid) }
+
+    suspend fun reset(uuid: String): Prefix {
+        return mutex.withLock {
+            val prefix = prefixes.find { it.uuid == uuid } ?: throw IllegalArgumentException("Prefix $uuid is not in the store")
+            deleteLocked(uuid)
+            createLocked(prefix.name, prefix.runtimeId)
+        }
+    }
+
+    suspend fun get(uuid: String): Prefix? = mutex.withLock { prefixes.find { it.uuid == uuid } }
 
     suspend fun getDefault(): Prefix? {
-        val prefixes = list()
-        // TODO: Use a setting for the default prefix.
-        return prefixes.firstOrNull()
+        return mutex.withLock {
+            // TODO: Use a setting for the default prefix.
+            prefixes.firstOrNull()
+        }
     }
 
     suspend fun update(uuid: String, func: suspend (Prefix) -> Prefix): Prefix {
-        return withContext(Dispatchers.IO) {
-            mutex.withLock {
-                val prefixIndex = prefixes.indexOfFirst { it.uuid == uuid }
-                if (prefixIndex == -1)
-                    throw IllegalArgumentException("Prefix $prefixIndex is not in the store")
+        return mutex.withLock {
+            val prefixIndex = prefixes.indexOfFirst { it.uuid == uuid }
+            if (prefixIndex == -1)
+                throw IllegalArgumentException("Prefix $prefixIndex is not in the store")
 
-                val updatedPrefix = func(prefixes[prefixIndex])
-                writePrefix(updatedPrefix)
-                prefixes[prefixIndex] = updatedPrefix
-                updatedPrefix
-            }
+            val updatedPrefix = func(prefixes[prefixIndex])
+            writePrefixLocked(updatedPrefix)
+            prefixes[prefixIndex] = updatedPrefix
+            updatedPrefix
         }
     }
 
     suspend fun updateLinks(uuid: String): Prefix {
         return update(uuid) { prefix ->
-            unlinkPrefix(prefix)
-            linkPrefix(prefix)
+            unlinkPrefixRuntimeLocked(prefix)
+            linkPrefixRuntimeLocked(prefix)
         }
     }
 
     suspend fun updateRuntime(uuid: String, runtimeId: String): Prefix {
         return update(uuid) { prefix ->
-            unlinkPrefix(prefix)
-            linkPrefix(prefix.copy(runtimeId = runtimeId))
-        }
-    }
-
-    @OptIn(ExperimentalPathApi::class)
-    suspend fun reset(uuid: String): Prefix {
-        return update(uuid) { prefix ->
-            val pfxPath = prefix.path.resolve("pfx")
-            pfxPath.deleteRecursively()
-            pfxPath.createDirectory()
-
-            val homePath = prefix.path.resolve("home")
-            homePath.deleteRecursively()
-            homePath.createDirectory()
-
-            linkPrefix(prefix.copy(runtimeLinks = emptyList()))
-        }
-    }
-
-    suspend fun delete(uuid: String) {
-        withContext(Dispatchers.IO) {
-            mutex.withLock {
-                val prefix = prefixes.find { it.uuid == uuid } ?: return@withContext
-                Files.walk(prefix.path).sorted(Comparator.reverseOrder()).forEach(Files::delete)
-                prefixes.remove(prefix)
-            }
+            unlinkPrefixRuntimeLocked(prefix)
+            linkPrefixRuntimeLocked(prefix.copy(runtimeId = runtimeId))
         }
     }
 }
