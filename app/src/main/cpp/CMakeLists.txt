@@ -7,7 +7,7 @@ project(cassia)
 add_subdirectory(libs)
 
 # Cassia
-file(GLOB cassia_SRC CONFIGURE_DEPENDS
+file(GLOB_RECURSE cassia_SRC CONFIGURE_DEPENDS
         "cassia/*.cpp" "cassia/*.c"
 )
 
