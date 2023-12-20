@@ -42,8 +42,11 @@ Process::Process(std::filesystem::path exe, const std::vector<std::string> &args
 }
 
 Process::~Process() {
-    if (IsRunning())
-        kill(pid, SIGKILL);
+    TerminateIf(IsRunning(), "Process {} is still running", pid);
+}
+
+void Process::Detach() {
+    pid = -1;
 }
 
 bool Process::IsRunning() {
