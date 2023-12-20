@@ -23,8 +23,9 @@ class WineContext {
     /**
      * @brief Launches a Windows executable in the Wine environment.
      * @param exe The path to the executable to launch, this doesn't need to be an absolute path for executables in Wine's PATH (eg. cmd.exe, wineboot.exe, etc).
+     * @param logPipe Same as Process::Process.
      */
-    Process Launch(std::string exe, std::vector<std::string> args = {}, std::vector<std::string> envVars = {});
+    Process Launch(std::string exe, std::vector<std::string> args = {}, std::vector<std::string> envVars = {}, std::optional<LogPipe> logPipe = std::nullopt);
 
     /**
      * @details This will attempt to shutdown the Wine prefix with wineboot and use wineserver to kill all other wine processes.
