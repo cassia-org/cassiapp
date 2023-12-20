@@ -11,7 +11,7 @@ ANativeWindow *nativeWindow{nullptr};
 
 extern "C" JNIEXPORT void JNICALL
 Java_cassia_app_CassiaManager_startServer(
-        JNIEnv* env,
+        JNIEnv *env,
         jobject /* this */,
         jstring jRuntimePath, jstring jPrefixPath) {
     const char *runtimePathStr{env->GetStringUTFChars(jRuntimePath, nullptr)};
@@ -30,7 +30,7 @@ Java_cassia_app_CassiaManager_startServer(
 extern "C"
 JNIEXPORT void JNICALL
 Java_cassia_app_CassiaManager_stopServer(
-        JNIEnv* env,
+        JNIEnv *env,
         jobject /* this */) {
     std::scoped_lock lock{stateMutex};
     wineCtx.reset();
@@ -38,7 +38,7 @@ Java_cassia_app_CassiaManager_stopServer(
 
 extern "C" JNIEXPORT void JNICALL
 Java_cassia_app_CassiaManager_setSurface(
-        JNIEnv* env,
+        JNIEnv *env,
         jobject /* this */,
         jobject surface) {
     std::scoped_lock lock{stateMutex};

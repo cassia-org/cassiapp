@@ -11,6 +11,6 @@ file(GLOB cassia_SRC CONFIGURE_DEPENDS
     "cassia/*.cpp" "cassia/*.c"
 )
 
-add_library(cassia SHARED native-lib.cpp ${cassia_SRC})
+add_library(cassia SHARED native_lib.cpp ${cassia_SRC})
 
 target_link_libraries(cassia android log)
