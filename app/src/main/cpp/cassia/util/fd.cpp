@@ -31,4 +31,8 @@ UniqueFd::~UniqueFd() {
 UniqueFd UniqueFd::Duplicate() {
     return UniqueFd(dup(fd));
 }
+
+SharedFd::SharedFd(int pFd) : fd{std::make_shared<UniqueFd>(pFd)} {}
+
+SharedFd::SharedFd(UniqueFd &&other) noexcept: fd{std::make_shared<UniqueFd>(std::move(other))} {}
 }

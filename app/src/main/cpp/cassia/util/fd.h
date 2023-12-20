@@ -1,6 +1,8 @@
 // Copyright © 2023 Cassia Developers, all rights reserved.
 #pragma once
 
+#include <memory>
+
 namespace cassia {
 /**
  * @brief A RAII wrapper for a Unix file descriptor.
@@ -52,5 +54,50 @@ struct UniqueFd {
      * @return A new file descriptor that refers to the same underlying file, these have independent lifetimes.
      */
     [[nodiscard]] UniqueFd Duplicate();
+};
+
+/**
+ * @brief A reference-counting RAII wrapper for a Unix file descriptor.
+ */
+struct SharedFd {
+  private:
+    std::shared_ptr<UniqueFd> fd;
+
+  public:
+    SharedFd(int pFd);
+
+    SharedFd(UniqueFd &&other) noexcept;
+
+    SharedFd(const SharedFd &) = default;
+
+    SharedFd(SharedFd &&) = default;
+
+    SharedFd &operator=(const SharedFd &) = default;
+
+    SharedFd &operator=(SharedFd &&) = default;
+
+    /**
+     * @note This will be -1 if this SharedFd is invalid.
+     */
+    [[nodiscard]] constexpr int Get() {
+        if (!fd)
+            return -1;
+        return fd->Get();
+    }
+
+    /**
+     * @brief Resets this reference to the file descriptor, closing the file descriptor if this was the last reference.
+     * @note After this is called, this SharedFd will be invalid.
+     */
+    constexpr void Reset() {
+        fd.reset();
+    }
+
+    /**
+     * @return If this SharedFd is referring to a valid file descriptor.
+     */
+    constexpr bool Valid() {
+        return fd != nullptr;
+    }
 };
 }
