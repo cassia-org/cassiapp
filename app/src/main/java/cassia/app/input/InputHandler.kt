@@ -38,7 +38,7 @@ class InputHandler {
         for (i in 0..7) {
             val mask = 1 shl i
             if (buttonState and mask != this.mouseButtonState and mask) {
-                val linuxButton = 0 // TODO: Convert Android button to Linux button.
+                val linuxButton = InputEventMap.toLinuxButton(i)
                 if (buttonState and mask != 0) {
                     Log.d(TAG, "Mouse Button Down: $i -> $linuxButton")
                 } else {
@@ -103,7 +103,7 @@ class InputHandler {
     fun onKeyEvent(event: KeyEvent): Boolean {
         when (event.source and InputDevice.SOURCE_CLASS_MASK) {
             InputDevice.SOURCE_CLASS_BUTTON -> {
-                val scanCode = event.scanCode // TODO: Don't rely on HW scancode, convert Android keycode to Linux scancode manually.
+                val scanCode = InputEventMap.toScanCode(event.keyCode)
                 if (scanCode == 0)
                     return false // We don't recognize this key, so let the app handle it.
 
