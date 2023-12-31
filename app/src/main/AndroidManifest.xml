@@ -29,8 +29,7 @@
             android:name=".activity.RunnerActivity"
             android:exported="true"
             android:theme="@style/Theme.Cassia.Runner"
-            android:screenOrientation="sensorLandscape">
-        </activity>
+            android:screenOrientation="sensorLandscape"
+            tools:ignore="DiscouragedApi" />
     </application>
-
 </manifest>
