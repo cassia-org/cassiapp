@@ -3,6 +3,8 @@ package cassia.app.activity
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
@@ -58,7 +60,13 @@ class RunnerActivity : ComponentActivity() {
                         surfaceDestroyedHandler = { holder ->
                             (application as CassiaApplication).manager.setSurface(null)
                             status = "Surface destroyed"
-                        }
+                        },
+                        onMotionEvent = { view, event ->
+                            false
+                        },
+                        onKeyListener = { event ->
+                            false
+                        },
                     )
                     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                         Text("Cassia Runner", style = MaterialTheme.typography.bodyMedium, color = Color.White)
@@ -111,7 +119,13 @@ class RunnerActivity : ComponentActivity() {
 }
 
 @Composable
-fun SurfaceViewComposable(surfaceCreatedHandler: (SurfaceHolder) -> Unit, surfaceChangedHandler: (SurfaceHolder, Int, Int, Int) -> Unit, surfaceDestroyedHandler: (SurfaceHolder) -> Unit) {
+fun SurfaceViewComposable(
+    surfaceCreatedHandler: (SurfaceHolder) -> Unit,
+    surfaceChangedHandler: (SurfaceHolder, Int, Int, Int) -> Unit,
+    surfaceDestroyedHandler: (SurfaceHolder) -> Unit,
+    onMotionEvent: (View, MotionEvent) -> Boolean,
+    onKeyListener: (KeyEvent) -> Boolean,
+) {
     AndroidView(
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
@@ -129,6 +143,31 @@ fun SurfaceViewComposable(surfaceCreatedHandler: (SurfaceHolder) -> Unit, surfac
                         surfaceDestroyedHandler(holder)
                     }
                 })
+
+                // Touchscreen
+                setOnTouchListener { view, event ->
+                    performClick()
+                    onMotionEvent(view, event)
+                }
+
+                // Hardware Mouse
+                setOnClickListener {
+                    requestFocusFromTouch()
+                    requestPointerCapture()
+                }
+                setOnCapturedPointerListener { view, event ->
+                    onMotionEvent(view, event)
+                }
+
+                // Virtual/Hardware Keyboard
+                setOnKeyListener { _, _, event ->
+                    onKeyListener(event)
+                }
+
+                // Generic MotionEvent (Joystick, Gamepad, etc.)
+                setOnGenericMotionListener { view, event ->
+                    onMotionEvent(view, event)
+                }
             }
         }
     )
