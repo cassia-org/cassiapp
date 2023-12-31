@@ -33,9 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import cassia.app.CassiaApplication
 import cassia.app.R
+import cassia.app.input.InputHandler
 import cassia.app.ui.theme.CassiaTheme
 
 class RunnerActivity : ComponentActivity() {
+    private var input = InputHandler()
+
     /**
      * Selects the highest available refresh rate for the display
      */
@@ -54,18 +57,18 @@ class RunnerActivity : ComponentActivity() {
                     SurfaceViewComposable(
                         surfaceCreatedHandler = { holder -> status = "Surface created"; },
                         surfaceChangedHandler = { holder, format, width, height ->
-                            (application as CassiaApplication).manager.setSurface(holder.surface)
+                            CassiaApplication.instance.manager.setSurface(holder.surface)
                             status = "Surface active (${width}x${height})"
                         },
                         surfaceDestroyedHandler = { holder ->
-                            (application as CassiaApplication).manager.setSurface(null)
+                            CassiaApplication.instance.manager.setSurface(null)
                             status = "Surface destroyed"
                         },
                         onMotionEvent = { view, event ->
-                            false
+                            input.onMotionEvent(view, event)
                         },
                         onKeyListener = { event ->
-                            false
+                            input.onKeyEvent(event)
                         },
                     )
                     Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
