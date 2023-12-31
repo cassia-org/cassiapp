@@ -1,6 +1,5 @@
 package cassia.app.activity
 
-import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -33,27 +32,14 @@ import androidx.compose.ui.viewinterop.AndroidView
 import cassia.app.CassiaApplication
 import cassia.app.R
 import cassia.app.ui.theme.CassiaTheme
-import kotlin.math.abs
 
 class RunnerActivity : ComponentActivity() {
     /**
-     * Forces a 60Hz refresh rate for the primary display when [enable] is true, otherwise selects the highest available refresh rate
+     * Selects the highest available refresh rate for the display
      */
-    private fun force60HzRefreshRate(enable : Boolean) {
-        // Hack for MIUI devices since they don't support the standard Android APIs
-        try {
-            val setFpsIntent = Intent("com.miui.powerkeeper.SET_ACTIVITY_FPS")
-            setFpsIntent.putExtra("package_name", applicationContext.packageName!!)
-            setFpsIntent.putExtra("isEnter", enable)
-            sendBroadcast(setFpsIntent)
-        } catch (_ : Exception) {
-        }
-
+    private fun requestHighRefreshRate() {
         @Suppress("DEPRECATION") val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) display!! else windowManager.defaultDisplay
-        if (enable)
-            display?.supportedModes?.minByOrNull { abs(it.refreshRate - 60f) }?.let { window.attributes.preferredDisplayModeId = it.modeId }
-        else
-            display?.supportedModes?.maxByOrNull { it.refreshRate }?.let { window.attributes.preferredDisplayModeId = it.modeId }
+        display?.supportedModes?.maxByOrNull { it.refreshRate }?.let { window.attributes.preferredDisplayModeId = it.modeId }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,7 +83,7 @@ class RunnerActivity : ComponentActivity() {
             }
         }
 
-        force60HzRefreshRate(false)
+        requestHighRefreshRate()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -115,7 +101,7 @@ class RunnerActivity : ComponentActivity() {
                     or View.SYSTEM_UI_FLAG_FULLSCREEN)
         }
 
-        force60HzRefreshRate(false)
+        requestHighRefreshRate()
     }
 
     override fun onDestroy() {
