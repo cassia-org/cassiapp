@@ -24,6 +24,14 @@ struct Process {
      */
     Process(std::filesystem::path exe, const std::vector<std::string> &args = {}, const std::vector<std::string> &envVars = {}, std::optional<LogPipe> logPipe = std::nullopt);
 
+    Process(const Process &) = delete;
+
+    Process &operator=(const Process &) = delete;
+
+    Process(Process &&other) noexcept;
+
+    Process &operator=(Process &&other) noexcept;
+
     ~Process();
 
     /**

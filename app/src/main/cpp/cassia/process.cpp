@@ -41,6 +41,14 @@ Process::Process(std::filesystem::path exe, const std::vector<std::string> &args
     }
 }
 
+Process::Process(Process &&other) noexcept: pid{other.pid} { other.pid = -1; }
+
+Process &Process::operator=(Process &&other) noexcept {
+    pid = other.pid;
+    other.pid = -1;
+    return *this;
+}
+
 Process::~Process() {
     TerminateIf(IsRunning(), "Process {} is still running", pid);
 }
