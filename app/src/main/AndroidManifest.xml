@@ -36,5 +36,16 @@
             android:theme="@style/Theme.Cassia.Runner"
             android:screenOrientation="sensorLandscape"
             tools:ignore="DiscouragedApi" />
+
+        <provider
+            android:name=".provider.DocumentsProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
     </application>
 </manifest>
