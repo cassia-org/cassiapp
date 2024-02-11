@@ -264,7 +264,7 @@ class DocumentsProvider : DocumentsProvider() {
         val file = getFile(documentId!!)
         val relativePath = file.toRelativeString(baseDirectory)
         // If the file isn't in the prefixes or runtimes directory, we don't want to show it.
-        return !relativePath.startsWith("prefixes") && !relativePath.startsWith("runtimes")
+        return !relativePath.startsWith("prefixes") && !relativePath.startsWith("runtimes") && !relativePath.startsWith("cassiaext")
     }
 
     override fun queryChildDocuments(parentDocumentId: String?, projection: Array<out String>?, sortOrder: String?): Cursor {

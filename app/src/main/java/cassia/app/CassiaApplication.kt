@@ -1,6 +1,7 @@
 package cassia.app
 
 import android.app.Application
+import cassia.app.store.CassiaExtStore
 import cassia.app.store.PrefixStore
 import cassia.app.store.RuntimeStore
 import kotlinx.coroutines.MainScope
@@ -17,6 +18,8 @@ class CassiaApplication : Application() {
         instance = this
     }
 
+    lateinit var cassiaExt: CassiaExtStore
+        private set
     lateinit var runtimes: RuntimeStore
         private set
     lateinit var prefixes: PrefixStore
@@ -28,6 +31,7 @@ class CassiaApplication : Application() {
         super.onCreate()
         instance = this
 
+        cassiaExt = CassiaExtStore(Paths.get(filesDir.absolutePath, "cassiaext"))
         runtimes = RuntimeStore(Paths.get(filesDir.absolutePath, "runtimes"))
         prefixes = PrefixStore(Paths.get(filesDir.absolutePath, "prefixes"))
         MainScope().launch {
