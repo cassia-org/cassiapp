@@ -1,4 +1,5 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentOperatingSystem
+import java.util.UUID
 
 plugins {
     id("com.android.application")
@@ -113,6 +114,9 @@ project.tasks.register("buildCassiaExt") {
             throw RuntimeException("CassiaExt build did not produce tarball: $cassiaExtHostPath/prefix.tar.gz")
         temporaryDir.deleteRecursively() // Clean up any previous build
         prefixTarGz.copyTo(temporaryDir.resolve("cassiaext.tar.gz"), overwrite = true)
+
+        val idFile = temporaryDir.resolve("cassiaext.id")
+        idFile.writeText(UUID.randomUUID().toString())
 
         val assetsSet = project.android.sourceSets["main"].assets
         assetsSet.setSrcDirs(setOf(assetsSet.srcDirs + temporaryDir))
