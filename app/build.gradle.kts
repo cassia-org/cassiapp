@@ -1,3 +1,5 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.getCurrentOperatingSystem
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -67,6 +69,63 @@ android {
     }
     buildToolsVersion = "34.0.0"
 }
+
+project.tasks.register("buildCassiaExt") {
+    doLast {
+        val cassiaExtCfg = project.file("cassiaext.cfg").readText().trim().lines()
+        val cassiaExtPath = cassiaExtCfg.getOrNull(0) ?: throw RuntimeException("cassiaext.cfg is empty")
+        var cassiaExtHostPath = cassiaExtPath
+        val cfgWrapper = cassiaExtCfg.getOrNull(1)
+
+        var shellWrapper = arrayOf<String>()
+        if (getCurrentOperatingSystem().isWindows) {
+            // Look for the wsl.exe in PATH
+            val process = ProcessBuilder().command("where", "wsl").start()
+            if (process.waitFor() != 0)
+                throw RuntimeException("'where wsl' failed with exit code ${process.exitValue()}")
+            shellWrapper += process.inputReader().use { it.readLines().getOrNull(0) }?.trim()
+                ?: throw RuntimeException("WSL not found in PATH")
+            shellWrapper += "--"
+
+            // Convert the path to WSL format
+            val process2 = ProcessBuilder().command(*shellWrapper, "wslpath", "-wa", cassiaExtPath).start()
+            if (process2.waitFor() != 0)
+                throw RuntimeException("WSL failed to convert path: ${process2.errorStream.reader().readText()}")
+            cassiaExtHostPath = process2.inputStream.use { it.reader().readText() }.trim()
+        } else if (getCurrentOperatingSystem().isLinux) {
+            shellWrapper = arrayOf("/bin/bash", "-c")
+        } else {
+            throw RuntimeException("Unsupported operating system")
+        }
+
+        if (cfgWrapper != null)
+            shellWrapper += cfgWrapper.split(" ").toTypedArray()
+
+        if (!project.file(cassiaExtHostPath).exists())
+            throw RuntimeException("CassiaExt path does not exist: $cassiaExtHostPath")
+
+        val process3 = ProcessBuilder().command(*shellWrapper, "ninja -C $cassiaExtPath all").start()
+        if (process3.waitFor() != 0)
+            throw RuntimeException("Ninja failed to build CassiaExt: ${process3.exitValue()}\nSTDOUT:\n${process3.inputStream.reader().readText().trim()}\nSTDERR:\n${process3.errorStream.reader().readText().trim()}")
+
+        val prefixTarGz = project.file("$cassiaExtHostPath/prefix.tar.gz")
+        if (!prefixTarGz.exists())
+            throw RuntimeException("CassiaExt build did not produce tarball: $cassiaExtHostPath/prefix.tar.gz")
+        temporaryDir.deleteRecursively() // Clean up any previous build
+        prefixTarGz.copyTo(temporaryDir.resolve("cassiaext.tar.gz"), overwrite = true)
+
+        val assetsSet = project.android.sourceSets["main"].assets
+        assetsSet.setSrcDirs(setOf(assetsSet.srcDirs + temporaryDir))
+    }
+
+    outputs.upToDateWhen { false } // Always run this task
+}
+
+
+project.tasks.whenTaskAdded(fun(t: Task) {
+    if (t.name == "generateDebugAssets" || t.name == "generateReleaseAssets")
+        t.dependsOn("buildCassiaExt")
+})
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
