@@ -119,7 +119,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         LaunchedEffect(Unit) {
-                            defaultRuntime = CassiaApplication.instance.runtimes.getDefault()?.uuid
+                            defaultRuntime = CassiaApplication.instance.runtimes.getDefault()?.id
                             prefix = CassiaApplication.instance.prefixes.getDefault()
                         }
                     }
