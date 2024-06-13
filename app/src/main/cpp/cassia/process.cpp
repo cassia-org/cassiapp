@@ -13,6 +13,8 @@ Process::Process(std::filesystem::path exe, const std::vector<std::string> &args
      */
     constexpr const char *LinkerPath{"/system/bin/linker64"};
 
+    fmt::println(stderr, "Launching '{} {}'", exe.string(), fmt::join(args, " "));
+
     pid = fork();
     if (pid == 0) {
         if (logPipe.has_value()) {
@@ -72,6 +74,8 @@ int Process::WaitForExit() {
         return -1;
     int status;
     waitpid(pid, &status, 0);
+    
+    fmt::println(stderr, "Process {} exited with status {}", pid, WEXITSTATUS(status));
     pid = -1;
     return WEXITSTATUS(status);
 }

@@ -18,7 +18,7 @@ class WineContext {
     /**
      * @details This will start the wineserver process and initialize the Wine prefix with wineboot.
      */
-    WineContext(std::filesystem::path runtimePath, std::filesystem::path prefixPath);
+    WineContext(std::filesystem::path runtimePath, std::filesystem::path prefixPath, std::filesystem::path cassiaExtPath);
 
     /**
      * @brief Launches a Windows executable in the Wine environment.

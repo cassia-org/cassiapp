@@ -14,7 +14,7 @@ class CassiaManager {
         }
     }
 
-    private external fun startServer(runtimePath: String, prefixPath: String)
+    private external fun startServer(runtimePath: String, prefixPath: String, cassiaExtPath: String)
 
     private external fun stopServer()
 
@@ -33,7 +33,7 @@ class CassiaManager {
             runningPrefix = prefix
 
             withContext(Dispatchers.IO) {
-                startServer(prefix.runtimePath.toString(), prefix.path.toString())
+                startServer(prefix.runtimePath.toString(), prefix.path.toString(), CassiaApplication.instance.cassiaExt.path.toString())
             }
         }
     }

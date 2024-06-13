@@ -15,11 +15,30 @@ std::string GetWineDebug() {
     return "";
 }
 
-WineContext::WineContext(std::filesystem::path pRuntimePath, std::filesystem::path pPrefixPath)
+WineContext::WineContext(std::filesystem::path pRuntimePath, std::filesystem::path pPrefixPath, std::filesystem::path cassiaExtPath)
         : runtimePath{std::move(pRuntimePath)}, prefixPath{std::move(pPrefixPath)},
-          envVars{"WINEPREFIX=" + (prefixPath / "pfx").string(), "HOME=" + (prefixPath / "home").string(), "LD_LIBRARY_PATH=" + (runtimePath / "lib").string(), "PATH=" + (runtimePath / "bin").string(), "WINELOADER=" + (runtimePath / "bin/wine").string(), GetWineDebug()},
+          envVars{
+                  "WINEPREFIX=" + (prefixPath / "pfx").string(),
+                  "HOME=" + (prefixPath / "home").string(),
+                  "LD_LIBRARY_PATH=" + (runtimePath / "lib").string() + ":" + (cassiaExtPath / "lib").string(),
+                  "PATH=" + (runtimePath / "bin").string(),
+                  "WINELOADER=" + (runtimePath / "bin/wine").string(),
+                  "DISPLAY=/data/data/cassia.app/cache/tmp/.X11-unix/X0",
+//                  "ALSA_CONFIG_PATH=" + (prefixPath / "home/.asoundrc").string(),
+                  "ALSA_CONFIG_DIR=" + (runtimePath / "share/alsa/").string(),
+                  "ALSA_PLUGIN_DIR=" + (runtimePath / "lib/alsa-lib/").string(),
+                  "LIBASOUND_DEBUG=1",
+                  "WINE_DISABLE_FULLSCREEN_HACK=1",
+                  "ADRENOTOOLS_HOOK_LIB_DIR=" + (runtimePath / "lib").string(),
+                  "ADRENOTOOLS_CUSTOM_DRIVER_DIR=" + (cassiaExtPath / "../driver/").string(),
+                  "ADRENOTOOLS_CUSTOM_DRIVER_NAME=libvulkan_freedreno.so",
+                  "MESA_VK_WSI_DEBUG=sw",
+                  "DXVK_HUD=full",
+                  GetWineDebug()
+          },
           serverProcess{runtimePath / "bin/wineserver", {"--foreground", "--persistent"}, envVars, Logger::GetPipe("wineserver")} {
     Launch("wineboot.exe", {"--init"}, {}, Logger::GetPipe("wineboot")).WaitForExit();
+    Launch("explorer.exe", {"/desktop=shell,1280x720", "winecfg"}, {}, Logger::GetPipe("explorer")).Detach();
 }
 
 Process WineContext::Launch(std::string exe, std::vector<std::string> args, std::vector<std::string> pEnvVars, std::optional<LogPipe> logPipe) {

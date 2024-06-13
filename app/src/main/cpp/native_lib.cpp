@@ -13,17 +13,20 @@ extern "C" JNIEXPORT void JNICALL
 Java_cassia_app_CassiaManager_startServer(
         JNIEnv *env,
         jobject /* this */,
-        jstring jRuntimePath, jstring jPrefixPath) {
+        jstring jRuntimePath, jstring jPrefixPath, jstring jCassiaExtPath) {
     const char *runtimePathStr{env->GetStringUTFChars(jRuntimePath, nullptr)};
     const char *prefixPathStr{env->GetStringUTFChars(jPrefixPath, nullptr)};
+    const char *cassiaExtPathStr{env->GetStringUTFChars(jCassiaExtPath, nullptr)};
     std::filesystem::path runtimePath{runtimePathStr};
     std::filesystem::path prefixPath{prefixPathStr};
+    std::filesystem::path cassiaExtPath{cassiaExtPathStr};
     env->ReleaseStringUTFChars(jRuntimePath, runtimePathStr);
     env->ReleaseStringUTFChars(jPrefixPath, prefixPathStr);
+    env->ReleaseStringUTFChars(jCassiaExtPath, cassiaExtPathStr);
 
     {
         std::scoped_lock lock{stateMutex};
-        wineCtx.emplace(runtimePath, prefixPath);
+        wineCtx.emplace(runtimePath, prefixPath, cassiaExtPath);
     }
 }
 

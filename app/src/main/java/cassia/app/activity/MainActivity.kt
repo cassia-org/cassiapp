@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import cassia.app.CassiaApplication
+import cassia.app.TermuxX11
 import cassia.app.store.Prefix
 import cassia.app.ui.theme.CassiaTheme
 import kotlinx.coroutines.MainScope
@@ -115,6 +116,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             }) {
                                 Text(text = "Reset Prefix")
+                            }
+                        }
+                        Row {
+                            Button(onClick = {
+                                MainScope().launch {
+                                    TermuxX11.main(arrayOf(":0"))
+                                }
+                            }, enabled = !running) {
+                                Text(text = "Run Termux:X11")
                             }
                         }
 
