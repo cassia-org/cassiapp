@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="CassiaKotlin" pattern="file[Cassia.app.main]:java/cassia//*" />
+</component>
